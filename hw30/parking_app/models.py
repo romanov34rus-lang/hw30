@@ -3,7 +3,6 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from flask_sqlalchemy import SQLAlchemy
-
     db: SQLAlchemy
 else:
     from . import db
