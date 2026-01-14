@@ -1,6 +1,11 @@
 from datetime import UTC, datetime
+from typing import TYPE_CHECKING
 
-from . import db
+if TYPE_CHECKING:
+    from flask_sqlalchemy import SQLAlchemy
+    db: SQLAlchemy
+else:
+    from . import db
 
 
 class Client(db.Model):
@@ -12,7 +17,7 @@ class Client(db.Model):
     credit_card = db.Column(db.String(50))
     car_number = db.Column(db.String(10))
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<Client {self.name} {self.surname}>"
 
 
@@ -25,7 +30,7 @@ class Parking(db.Model):
     count_places = db.Column(db.Integer, nullable=False)
     count_available_places = db.Column(db.Integer, nullable=False)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<Parking {self.address}>"
 
 
@@ -34,30 +39,25 @@ class ClientParking(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     client_id = db.Column(
-        db.Integer,
-        db.ForeignKey("client.id"),
-        nullable=False
+        db.Integer, db.ForeignKey("client.id"), nullable=False
     )
     parking_id = db.Column(
-        db.Integer,
-        db.ForeignKey("parking.id"),
-        nullable=False
+        db.Integer, db.ForeignKey("parking.id"), nullable=False
     )
     time_in = db.Column(db.DateTime, default=datetime.now(UTC))
     time_out = db.Column(db.DateTime, nullable=True)
 
-    # ограничение: один клиент — одна парковка одновременно
     __table_args__ = (
         db.UniqueConstraint(
-            "client_id",
-            "parking_id",
-            name="unique_client_parking"
+            "client_id", "parking_id", name="unique_client_parking"
         ),
     )
 
     client = db.relationship("Client", backref="parking_logs")
     parking = db.relationship("Parking", backref="client_logs")
 
-    def __repr__(self):
-        return f"<ClientParking client={self.client_id}, " \
-               f"parking={self.parking_id}>"
+    def __repr__(self) -> str:
+        return (
+            f"<ClientParking client={self.client_id}, "
+            f"parking={self.parking_id}>"
+        )

@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+from typing import Any
 
 import pytest
 from parking_app.models import Client, ClientParking, Parking
@@ -6,12 +7,12 @@ from tests.factories import ClientFactory, ParkingFactory
 
 
 @pytest.mark.parametrize("url", ["/clients", "/clients/1"])
-def test_get_endpoints_return_200(client, url):
+def test_get_endpoints_return_200(client: Any, url: str) -> None:
     response = client.get(url)
     assert response.status_code == 200
 
 
-def test_create_client(client, db):
+def test_create_client(client: Any, db: Any) -> None:
     new_client_data = {
         "name": "Петр",
         "surname": "Петров",
@@ -24,13 +25,12 @@ def test_create_client(client, db):
     data = response.get_json()
     assert "id" in data
 
-    # Проверяем, что клиент действительно создан
     created = db.session.get(Client, data["id"])
     assert created is not None
     assert created.name == "Петр"
 
 
-def test_create_parking(client, db):
+def test_create_parking(client: Any, db: Any) -> None:
     parking_data = {"address": "ул. Гагарина, 5", "count_places": 5}
     response = client.post("/parkings", json=parking_data)
     assert response.status_code == 201
@@ -44,8 +44,7 @@ def test_create_parking(client, db):
 
 
 @pytest.mark.parking
-def test_enter_parking(client, db):
-    # Создадим нового клиента и парковку
+def test_enter_parking(client: Any, db: Any) -> None:
     client_obj = Client(
         name="Анна",
         surname="Сидорова",
@@ -56,23 +55,20 @@ def test_enter_parking(client, db):
         address="ул. Пушкина, 15",
         opened=True,
         count_places=1,
-        count_available_places=1
+        count_available_places=1,
     )
     db.session.add_all([client_obj, parking_obj])
     db.session.commit()
 
-    # Заезд
     response = client.post(
         "/client_parkings",
         json={"client_id": client_obj.id, "parking_id": parking_obj.id},
     )
     assert response.status_code == 201
 
-    # Проверяем, что место занято
     updated_parking = db.session.get(Parking, parking_obj.id)
     assert updated_parking.count_available_places == 0
 
-    # Проверяем запись в лог
     log = (
         db.session.query(ClientParking)
         .filter_by(client_id=client_obj.id, parking_id=parking_obj.id)
@@ -84,7 +80,7 @@ def test_enter_parking(client, db):
 
 
 @pytest.mark.parking
-def test_exit_parking(client, db):
+def test_exit_parking(client: Any, db: Any) -> None:
     client_obj = Client(
         name="Елена",
         surname="Кузнецова",
@@ -95,7 +91,7 @@ def test_exit_parking(client, db):
         address="ул. Чехова, 20",
         opened=True,
         count_places=1,
-        count_available_places=0,  # занято!
+        count_available_places=0,
     )
     db.session.add_all([client_obj, parking_obj])
     db.session.commit()
@@ -103,19 +99,17 @@ def test_exit_parking(client, db):
     log_entry = ClientParking(
         client_id=client_obj.id,
         parking_id=parking_obj.id,
-        time_in=datetime.now(UTC)
+        time_in=datetime.now(UTC),
     )
     db.session.add(log_entry)
     db.session.commit()
 
-    # Выезд
     response = client.delete(
         "/client_parkings",
         json={"client_id": client_obj.id, "parking_id": parking_obj.id},
     )
     assert response.status_code == 200
 
-    # Проверки
     updated_parking = db.session.get(Parking, parking_obj.id)
     assert updated_parking.count_available_places == 1
 
@@ -123,7 +117,6 @@ def test_exit_parking(client, db):
     assert updated_log.time_out is not None
     assert updated_log.time_out >= updated_log.time_in
 
-    # Проверяем, что карта была обязательна
     no_card_client = Client(
         name="Без", surname="Карты", credit_card=None, car_number="X999XX"
     )
@@ -149,7 +142,7 @@ def test_exit_parking(client, db):
     assert "credit card" in resp.get_json()["error"].lower()
 
 
-def test_enter_closed_parking(client, db):
+def test_enter_closed_parking(client: Any, db: Any) -> None:
     client_obj = Client(
         name="Test", surname="User", credit_card="1234", car_number="T123ST"
     )
@@ -157,7 +150,7 @@ def test_enter_closed_parking(client, db):
         address="Closed lot",
         opened=False,
         count_places=1,
-        count_available_places=1
+        count_available_places=1,
     )
     db.session.add_all([client_obj, parking_obj])
     db.session.commit()
@@ -170,7 +163,7 @@ def test_enter_closed_parking(client, db):
     assert "closed" in resp.get_json()["error"]
 
 
-def test_enter_full_parking(client, db):
+def test_enter_full_parking(client: Any, db: Any) -> None:
     client_obj = Client(
         name="Full", surname="User", credit_card="5678", car_number="F456LL"
     )
@@ -178,7 +171,7 @@ def test_enter_full_parking(client, db):
         address="Full lot",
         opened=True,
         count_places=1,
-        count_available_places=0
+        count_available_places=0,
     )
     db.session.add_all([client_obj, parking_obj])
     db.session.commit()
@@ -191,7 +184,7 @@ def test_enter_full_parking(client, db):
     assert "available places" in resp.get_json()["error"]
 
 
-def test_factory_create_client(client, db):
+def test_factory_create_client(client: Any, db: Any) -> None:
     fake_client = ClientFactory.build()
 
     client_data = {
@@ -207,13 +200,12 @@ def test_factory_create_client(client, db):
     data = response.get_json()
     assert "id" in data
 
-    # Проверяем, что запись создана
     created = db.session.get(Client, data["id"])
     assert created is not None
     assert created.name == fake_client.name
 
 
-def test_factory_create_parking(client, db):
+def test_factory_create_parking(client: Any, db: Any) -> None:
     fake_parking = ParkingFactory.build()
 
     parking_data = {

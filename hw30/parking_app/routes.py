@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+from typing import Any
 
 from flask import Blueprint, jsonify, request
 
@@ -9,7 +10,7 @@ api = Blueprint("api", __name__)
 
 
 @api.route("/clients", methods=["GET"])
-def get_clients():
+def get_clients() -> Any:
     clients = Client.query.all()
     return (
         jsonify(
@@ -29,7 +30,7 @@ def get_clients():
 
 
 @api.route("/clients/<int:client_id>", methods=["GET"])
-def get_client(client_id):
+def get_client(client_id: int) -> Any:
     client = db.session.get(Client, client_id)
     if not client:
         return jsonify({"error": "Client not found"}), 404
@@ -48,7 +49,7 @@ def get_client(client_id):
 
 
 @api.route("/clients", methods=["POST"])
-def create_client():
+def create_client() -> Any:
     data = request.get_json()
     required = ["name", "surname", "credit_card", "car_number"]
     if not all(field in data for field in required):
@@ -66,7 +67,7 @@ def create_client():
 
 
 @api.route("/parkings", methods=["POST"])
-def create_parking():
+def create_parking() -> Any:
     data = request.get_json()
     required = ["address", "count_places"]
     if not all(field in data for field in required):
@@ -80,7 +81,7 @@ def create_parking():
         address=data["address"],
         opened=data.get("opened", True),
         count_places=count_places,
-        count_available_places=count_places,  # изначально все места свободны
+        count_available_places=count_places,
     )
     db.session.add(new_parking)
     db.session.commit()
@@ -88,7 +89,7 @@ def create_parking():
 
 
 @api.route("/client_parkings", methods=["POST"])
-def enter_parking():
+def enter_parking() -> Any:
     data = request.get_json()
     client_id = data.get("client_id")
     parking_id = data.get("parking_id")
@@ -110,17 +111,14 @@ def enter_parking():
     if parking.count_available_places <= 0:
         return jsonify({"error": "No available places"}), 400
 
-    # Проверяем, не находится ли клиент уже на этой парковке
     existing = ClientParking.query.filter_by(
         client_id=client_id, parking_id=parking_id, time_out=None
     ).first()
     if existing:
         return jsonify({"error": "Client is already parked here"}), 400
 
-    # Уменьшаем количество свободных мест
     parking.count_available_places -= 1
 
-    # Фиксируем заезд
     entry = ClientParking(
         client_id=client_id, parking_id=parking_id, time_in=datetime.now(UTC)
     )
@@ -131,7 +129,7 @@ def enter_parking():
 
 
 @api.route("/client_parkings", methods=["DELETE"])
-def exit_parking():
+def exit_parking() -> Any:
     data = request.get_json()
     client_id = data.get("client_id")
     parking_id = data.get("parking_id")
@@ -146,16 +144,14 @@ def exit_parking():
     if not entry:
         return jsonify({"error": "Active parking session not found"}), 404
 
-    # Проверяем, что у клиента есть карта
     client = db.session.get(Client, client_id)
     if not client or not client.credit_card:
         return jsonify({"error": "Client has no credit card for payment"}), 400
 
-    # Увеличиваем свободные места
     parking = db.session.get(Parking, parking_id)
-    parking.count_available_places += 1
+    if parking:
+        parking.count_available_places += 1
 
-    # Фиксируем время выезда
     entry.time_out = datetime.now(UTC)
     db.session.commit()
 

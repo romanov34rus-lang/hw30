@@ -1,4 +1,5 @@
 from datetime import UTC, datetime, timedelta
+from typing import Any, Generator
 
 import pytest
 from parking_app import create_app
@@ -7,7 +8,7 @@ from parking_app.models import Client, ClientParking, Parking
 
 
 @pytest.fixture(scope="session")
-def app():
+def app() -> Any:
     app = create_app(testing=True)
     with app.app_context():
         _db.create_all()
@@ -42,11 +43,11 @@ def app():
 
 
 @pytest.fixture
-def client(app):
+def client(app: Any) -> Any:
     return app.test_client()
 
 
 @pytest.fixture
-def db(app):
+def db(app: Any) -> Generator[Any, None, None]:
     with app.app_context():
         yield _db
