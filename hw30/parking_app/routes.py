@@ -2,8 +2,8 @@ from datetime import UTC, datetime
 from typing import Any
 
 from flask import Blueprint, jsonify, request
+from parking_app import db
 
-from . import db
 from .models import Client, ClientParking, Parking
 
 api = Blueprint("api", __name__)
@@ -104,10 +104,8 @@ def enter_parking() -> Any:
         return jsonify({"error": "Client not found"}), 404
     if not parking:
         return jsonify({"error": "Parking not found"}), 404
-
     if not parking.opened:
         return jsonify({"error": "Parking is closed"}), 400
-
     if parking.count_available_places <= 0:
         return jsonify({"error": "No available places"}), 400
 
@@ -118,7 +116,6 @@ def enter_parking() -> Any:
         return jsonify({"error": "Client is already parked here"}), 400
 
     parking.count_available_places -= 1
-
     entry = ClientParking(
         client_id=client_id, parking_id=parking_id, time_in=datetime.now(UTC)
     )

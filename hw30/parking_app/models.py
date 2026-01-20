@@ -1,16 +1,10 @@
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from flask_sqlalchemy import SQLAlchemy
-    db: SQLAlchemy
-else:
-    from . import db
+from parking_app import db
 
 
 class Client(db.Model):
     __tablename__ = "client"
-
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), nullable=False)
     surname = db.Column(db.String(50), nullable=False)
@@ -23,7 +17,6 @@ class Client(db.Model):
 
 class Parking(db.Model):
     __tablename__ = "parking"
-
     id = db.Column(db.Integer, primary_key=True)
     address = db.Column(db.String(100), nullable=False)
     opened = db.Column(db.Boolean, default=True)
@@ -36,7 +29,6 @@ class Parking(db.Model):
 
 class ClientParking(db.Model):
     __tablename__ = "client_parking"
-
     id = db.Column(db.Integer, primary_key=True)
     client_id = db.Column(
         db.Integer, db.ForeignKey("client.id"), nullable=False
@@ -58,6 +50,6 @@ class ClientParking(db.Model):
 
     def __repr__(self) -> str:
         return (
-            f"<ClientParking client={self.client_id}, "
+            f"<ClientParking client={self.client_id},"
             f"parking={self.parking_id}>"
         )

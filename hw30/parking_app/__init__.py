@@ -26,3 +26,4 @@ def create_app(testing: bool = False) -> Flask:
     app.register_blueprint(api)
 
     return app
+

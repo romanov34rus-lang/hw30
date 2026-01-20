@@ -6,3 +6,6 @@ flake8
 isort
 black
 mypy
+Flask
+Flask-SQLAlchemy
+factory-boy

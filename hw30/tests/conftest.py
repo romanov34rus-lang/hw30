@@ -4,13 +4,14 @@ from typing import Any, Generator
 import pytest
 from parking_app import create_app
 from parking_app import db as _db
-from parking_app.models import Client, ClientParking, Parking
 
 
 @pytest.fixture(scope="session")
 def app() -> Any:
     app = create_app(testing=True)
     with app.app_context():
+        from parking_app.models import Client, ClientParking, Parking
+
         _db.create_all()
 
         client = Client(
@@ -42,12 +43,39 @@ def app() -> Any:
         _db.drop_all()
 
 
+@pytest.fixture(scope="session")
+def db(app: Any) -> Generator[Any, None, None]:
+    with app.app_context():
+        yield _db
+
+
 @pytest.fixture
 def client(app: Any) -> Any:
     return app.test_client()
 
 
-@pytest.fixture
-def db(app: Any) -> Generator[Any, None, None]:
-    with app.app_context():
-        yield _db
+@pytest.fixture(scope="session")
+def models():
+    from parking_app.models import Client, ClientParking, Parking
+
+    return Client, ClientParking, Parking
+
+
+# === ФИКСТУРА ДЛЯ ФАБРИК ===
+@pytest.fixture(scope="module")
+def factories(db, models):
+    from tests.factories import BaseClientFactory, BaseParkingFactory
+
+    Client, _, Parking = models
+
+    class ClientFactory(BaseClientFactory):
+        class Meta:
+            model = Client
+            sqlalchemy_session = db.session
+
+    class ParkingFactory(BaseParkingFactory):
+        class Meta:
+            model = Parking
+            sqlalchemy_session = db.session
+
+    return ClientFactory, ParkingFactory
