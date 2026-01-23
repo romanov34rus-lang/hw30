@@ -1,7 +1,8 @@
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, Tuple
 
 import pytest
+from parking_app.models import Client, ClientParking, Parking
 
 
 @pytest.mark.parametrize("url", ["/clients", "/clients/1"])
@@ -11,8 +12,6 @@ def test_get_endpoints_return_200(client: Any, url: str) -> None:
 
 
 def test_create_client(client: Any, db: Any) -> None:
-    from parking_app.models import Client
-
     new_client_data = {
         "name": "Петр",
         "surname": "Петров",
@@ -31,8 +30,6 @@ def test_create_client(client: Any, db: Any) -> None:
 
 
 def test_create_parking(client: Any, db: Any) -> None:
-    from parking_app.models import Parking
-
     parking_data = {"address": "ул. Гагарина, 5", "count_places": 5}
     response = client.post("/parkings", json=parking_data)
     assert response.status_code == 201
@@ -47,8 +44,6 @@ def test_create_parking(client: Any, db: Any) -> None:
 
 @pytest.mark.parking
 def test_enter_parking(client: Any, db: Any) -> None:
-    from parking_app.models import Client, ClientParking, Parking
-
     client_obj = Client(
         name="Анна",
         surname="Сидорова",
@@ -73,11 +68,10 @@ def test_enter_parking(client: Any, db: Any) -> None:
     updated_parking = db.session.get(Parking, parking_obj.id)
     assert updated_parking.count_available_places == 0
 
-    log = (
-        db.session.query(ClientParking)
-        .filter_by(client_id=client_obj.id, parking_id=parking_obj.id)
-        .first()
+    stmt = db.select(ClientParking).filter_by(
+        client_id=client_obj.id, parking_id=parking_obj.id
     )
+    log = db.session.execute(stmt).scalar_one_or_none()
     assert log is not None
     assert log.time_in is not None
     assert log.time_out is None
@@ -85,8 +79,6 @@ def test_enter_parking(client: Any, db: Any) -> None:
 
 @pytest.mark.parking
 def test_exit_parking(client: Any, db: Any) -> None:
-    from parking_app.models import Client, ClientParking, Parking
-
     client_obj = Client(
         name="Елена",
         surname="Кузнецова",
@@ -149,8 +141,6 @@ def test_exit_parking(client: Any, db: Any) -> None:
 
 
 def test_enter_closed_parking(client: Any, db: Any) -> None:
-    from parking_app.models import Client, Parking
-
     client_obj = Client(
         name="Test", surname="User", credit_card="1234", car_number="T123ST"
     )
@@ -172,8 +162,6 @@ def test_enter_closed_parking(client: Any, db: Any) -> None:
 
 
 def test_enter_full_parking(client: Any, db: Any) -> None:
-    from parking_app.models import Client, Parking
-
     client_obj = Client(
         name="Full", surname="User", credit_card="5678", car_number="F456LL"
     )
@@ -194,7 +182,7 @@ def test_enter_full_parking(client: Any, db: Any) -> None:
     assert "available places" in resp.get_json()["error"]
 
 
-def test_factory_create_client(client: Any, db: Any, factories) -> None:
+def test_factory_create_client(client: Any, db: Any, factories: Tuple) -> None:
     ClientFactory, _ = factories
 
     fake_client = ClientFactory.build()
@@ -212,15 +200,15 @@ def test_factory_create_client(client: Any, db: Any, factories) -> None:
     data = response.get_json()
     assert "id" in data
 
-    from parking_app.models import Client
-
     created = db.session.get(Client, data["id"])
     assert created is not None
     assert created.name == fake_client.name
     assert created.credit_card == fake_client.credit_card
 
 
-def test_factory_create_parking(client: Any, db: Any, factories) -> None:
+def test_factory_create_parking(
+    client: Any, db: Any, factories: Tuple
+) -> None:
     _, ParkingFactory = factories
 
     fake_parking = ParkingFactory.build()
@@ -236,8 +224,6 @@ def test_factory_create_parking(client: Any, db: Any, factories) -> None:
 
     data = response.get_json()
     assert "id" in data
-
-    from parking_app.models import Parking
 
     created = db.session.get(Parking, data["id"])
     assert created is not None

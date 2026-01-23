@@ -9,3 +9,4 @@ mypy
 Flask
 Flask-SQLAlchemy
 factory-boy
+sqlalchemy[mypy]

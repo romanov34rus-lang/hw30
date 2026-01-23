@@ -1,17 +1,20 @@
 from datetime import UTC, datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from flask import Blueprint, jsonify, request
 from parking_app import db
 
-from .models import Client, ClientParking, Parking
+if TYPE_CHECKING:
+    from .models import Client, ClientParking, Parking
+else:
+    from .models import Client, ClientParking, Parking
 
 api = Blueprint("api", __name__)
 
 
 @api.route("/clients", methods=["GET"])
 def get_clients() -> Any:
-    clients = Client.query.all()
+    clients = db.session.execute(db.select(Client)).scalars().all()
     return (
         jsonify(
             [
@@ -109,9 +112,10 @@ def enter_parking() -> Any:
     if parking.count_available_places <= 0:
         return jsonify({"error": "No available places"}), 400
 
-    existing = ClientParking.query.filter_by(
+    stmt = db.select(ClientParking).filter_by(
         client_id=client_id, parking_id=parking_id, time_out=None
-    ).first()
+    )
+    existing = db.session.execute(stmt).scalar_one_or_none()
     if existing:
         return jsonify({"error": "Client is already parked here"}), 400
 
@@ -134,9 +138,10 @@ def exit_parking() -> Any:
     if not client_id or not parking_id:
         return jsonify({"error": "client_id and parking_id are required"}), 400
 
-    entry = ClientParking.query.filter_by(
+    stmt = db.select(ClientParking).filter_by(
         client_id=client_id, parking_id=parking_id, time_out=None
-    ).first()
+    )
+    entry = db.session.execute(stmt).scalar_one_or_none()
 
     if not entry:
         return jsonify({"error": "Active parking session not found"}), 404

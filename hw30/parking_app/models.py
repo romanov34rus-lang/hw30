@@ -2,8 +2,10 @@ from datetime import UTC, datetime
 
 from parking_app import db
 
+from . import BaseModel
 
-class Client(db.Model):
+
+class Client(BaseModel):
     __tablename__ = "client"
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), nullable=False)
@@ -15,7 +17,7 @@ class Client(db.Model):
         return f"<Client {self.name} {self.surname}>"
 
 
-class Parking(db.Model):
+class Parking(BaseModel):
     __tablename__ = "parking"
     id = db.Column(db.Integer, primary_key=True)
     address = db.Column(db.String(100), nullable=False)
@@ -27,7 +29,7 @@ class Parking(db.Model):
         return f"<Parking {self.address}>"
 
 
-class ClientParking(db.Model):
+class ClientParking(BaseModel):
     __tablename__ = "client_parking"
     id = db.Column(db.Integer, primary_key=True)
     client_id = db.Column(

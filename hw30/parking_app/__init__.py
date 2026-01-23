@@ -1,7 +1,13 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.orm import DeclarativeBase
 
-db = SQLAlchemy()
+
+class BaseModel(DeclarativeBase):
+    pass
+
+
+db = SQLAlchemy(model_class=BaseModel)
 
 
 def create_app(testing: bool = False) -> Flask:

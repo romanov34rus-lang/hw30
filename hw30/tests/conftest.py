@@ -1,5 +1,5 @@
 from datetime import UTC, datetime, timedelta
-from typing import Any, Generator
+from typing import Any, Generator, Tuple
 
 import pytest
 from parking_app import create_app
@@ -55,15 +55,14 @@ def client(app: Any) -> Any:
 
 
 @pytest.fixture(scope="session")
-def models():
+def models() -> Tuple[Any, Any, Any]:
     from parking_app.models import Client, ClientParking, Parking
 
     return Client, ClientParking, Parking
 
 
-# === ФИКСТУРА ДЛЯ ФАБРИК ===
 @pytest.fixture(scope="module")
-def factories(db, models):
+def factories(db: Any, models: Tuple[Any, Any, Any]) -> Tuple[Any, Any]:
     from tests.factories import BaseClientFactory, BaseParkingFactory
 
     Client, _, Parking = models
